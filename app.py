@@ -2,6 +2,8 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 import os
+from pdfminer.high_level import extract_text as extract_pdf_text
+import docx
 
 app = Flask(__name__)
 CORS(app)
@@ -27,20 +29,20 @@ def score_resume():
 
     os.remove(filepath)  # Clean up after scoring
     return jsonify({'score': score})
-
 def extract_text(filepath):
     ext = os.path.splitext(filepath)[1].lower()
+
     if ext == '.txt':
         with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
             return f.read()
+
     elif ext == '.pdf':
-        import fitz  # PyMuPDF
-        doc = fitz.open(filepath)
-        return "\n".join([page.get_text() for page in doc])
+        return extract_pdf_text(filepath)
+
     elif ext == '.docx':
-        import docx
         doc = docx.Document(filepath)
         return "\n".join([para.text for para in doc.paragraphs])
+
     else:
         return ''
 def calculate_score(resume, jd):
@@ -53,5 +55,4 @@ def calculate_score(resume, jd):
     return round(float(similarity[0][0]) * 100, 2)
 
 if __name__ == '__main__':
-    app.run(debug=True,host='0.0.0.0')
-
+    app.run(debug=True, host='0.0.0.0')
